@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
 class ComposerPlugin : Plugin<Project> {
 
     companion object {
-        const val GROUP = "Composer Plugin"
+        const val GROUP = "Test Automation"
     }
 
     lateinit var config: ConfigExtension
@@ -45,7 +45,7 @@ class ComposerPlugin : Plugin<Project> {
         @Suppress("FoldInitializerAndIfToElvis")
         if (androidExtension == null)
             throw NullPointerException("Android configuration not found on the current project. \n" +
-                                       "composer is only applicable to android application builds")
+                    "composer is only applicable to android application builds")
 
         if (androidExtension !is AppExtension) {
             throw IllegalStateException("composer plugin only applicable to android application projects, open an issue if you need something else.")
@@ -56,30 +56,49 @@ class ComposerPlugin : Plugin<Project> {
                 if (it.testVariant == null) return@all
 
                 val assembleTask: Task = project.tasks.findByName("assemble${it.name.capitalize()}")
-                                         ?: throw IllegalStateException("Couldn't find assemble task for variant ${it.name}")
+                        ?: throw IllegalStateException("Couldn't find assemble task for variant ${it.name}")
 
                 val assembleTestTask: Task = project.tasks.findByName("assemble${it.name.capitalize()}AndroidTest")
-                                             ?: throw IllegalStateException("Couldn't find assemble android test task for variant ${it.name}")
+                        ?: throw IllegalStateException("Couldn't find assemble android test task for variant ${it.name}")
 
                 val configurator: ConfiguratorDomainObj? = config.configs.findByName(it.name)
                 project.createTask(
                         type = ComposerTask::class,
-                        name = "test${it.name.capitalize()}Composer",
-                        description = "Run composer for ${it.name} variant",
+                        name = "run${it.name.capitalize()}AutomationOnConnectedDevices",
+                        description = "Run automated tests for ${it.name} on connected devices",
                         dependsOn = listOf(assembleTask, assembleTestTask))
                         .apply {
+                            environment("ANDROID_HOME", androidExtension.sdkDirectory.absolutePath)
+                            instrumentationArguments.addAll(collectInstrumentationArgs(configurator))
                             apk = getApk(it, configurator)
                             testApk = getTestApk(it, configurator)
                             shard = configurator?.shard
                             outputDirectory = getOutputDirectory(it, configurator, project)
-                            instrumentationArguments.addAll(collectInstrumentationArgs(configurator))
                             verboseOutput = configurator?.verboseOutput
-                            configurator?.configureTask?.execute(this)
-                            environment("ANDROID_HOME", androidExtension.sdkDirectory.absolutePath)
                             devices = configurator?.devices ?: mutableListOf()
                             devicePattern = configurator?.devicePattern
                             keepOutput = configurator?.keepOutput
                             apkInstallTimeout = configurator?.apkInstallTimeout
+                            configurator?.configureTask?.execute(this)
+                        }
+
+                project.createTask(
+                        type = ComposerTask::class,
+                        name = "run${it.name.capitalize()}AutomationOnEc2",
+                        description = "Run automated tests for ${it.name} on devices specified in emulators.txt",
+                        dependsOn = listOf(assembleTask, assembleTestTask))
+                        .apply {
+                            environment("ANDROID_HOME", androidExtension.sdkDirectory.absolutePath)
+                            instrumentationArguments.addAll(collectInstrumentationArgs(configurator))
+                            apk = getApk(it, configurator)
+                            testApk = getTestApk(it, configurator)
+                            shard = configurator?.shard
+                            outputDirectory = getOutputDirectory(it, configurator, project)
+                            verboseOutput = configurator?.verboseOutput
+                            remoteHostsFile = getRemoteHostFile(configurator, project)
+                            keepOutput = configurator?.keepOutput
+                            apkInstallTimeout = configurator?.apkInstallTimeout
+                            configurator?.configureTask?.execute(this)
                         }
             }
         }
@@ -107,16 +126,20 @@ class ComposerPlugin : Plugin<Project> {
         }
     }
 
+    private fun getRemoteHostFile(configurator: ComposerConfigurator?, project: Project) : String {
+        return configurator?.remoteHostsFile ?: project.rootDir.absolutePath + "/emulators.txt"
+    }
+
     private fun getApk(variant: ApplicationVariant,
                        configurator: ComposerConfigurator?): File {
         try {
             return configurator?.apk ?: apkForVariant(variant)
         } catch (multipleFiles: IllegalArgumentException) {
             throw IllegalStateException("Multiple APK outputs found, " +
-                                        "You must define the apk to use for composer task on variant ${variant.name}", multipleFiles)
+                    "You must define the apk to use for composer task on variant ${variant.name}", multipleFiles)
         } catch (noFiles: NoSuchElementException) {
             throw IllegalStateException("No APK output found," +
-                                        "You must define the testApk to use for composer task on variant ${variant.name}", noFiles)
+                    "You must define the testApk to use for composer task on variant ${variant.name}", noFiles)
         }
 
     }
@@ -127,10 +150,10 @@ class ComposerPlugin : Plugin<Project> {
             return configurator?.testApk ?: testApkForVariant(variant)
         } catch (multipleFiles: IllegalArgumentException) {
             throw IllegalStateException("Multiple APK outputs found, " +
-                                        "You must define the testApk to use for composer task on variant ${variant.name}", multipleFiles)
+                    "You must define the testApk to use for composer task on variant ${variant.name}", multipleFiles)
         } catch (noFiles: NoSuchElementException) {
             throw IllegalStateException("No APK output found," +
-                                        "You must define the testApk to use for composer task on variant ${variant.name}", noFiles)
+                    "You must define the testApk to use for composer task on variant ${variant.name}", noFiles)
         }
     }
 

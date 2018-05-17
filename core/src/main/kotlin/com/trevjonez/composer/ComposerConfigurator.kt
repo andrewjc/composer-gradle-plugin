@@ -29,6 +29,7 @@ interface ComposerConfigurator {
     var devicePattern: String?
     var keepOutput: Boolean?
     var apkInstallTimeout: Int?
+    var remoteHostsFile: String?
 
     fun apk(value: File)
     fun apk(value: String)
@@ -45,4 +46,5 @@ interface ComposerConfigurator {
     fun devicePattern(value: String)
     fun keepOutput(value: Boolean)
     fun apkInstallTimeout(value: Int)
+    fun remoteHostsFile(value: String)
 }

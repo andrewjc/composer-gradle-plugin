@@ -30,7 +30,7 @@ open class ComposerTask : JavaExec(), ComposerConfigurator {
     companion object {
         private const val MAIN_CLASS = "com.gojuno.composer.MainKt"
         private const val COMPOSER = "composer"
-        private const val ARTIFACT_DEP = "com.gojuno.composer:composer:0.3.2"
+        private const val ARTIFACT_DEP = "com.github.andrewjc.composer:composer:0.3.2"
         val DEFAULT_OUTPUT_DIR = File("composer-output")
 
         fun createComposerConfiguration(project: Project) {
@@ -81,6 +81,9 @@ open class ComposerTask : JavaExec(), ComposerConfigurator {
     @get:[Input Optional]
     override var apkInstallTimeout: Int? = null
 
+    @get:[Input Optional]
+    override var remoteHostsFile: String? = null
+
     override fun exec() {
         if (outputDirectory.exists()) {
             if (!outputDirectory.deleteRecursively()) {
@@ -90,7 +93,7 @@ open class ComposerTask : JavaExec(), ComposerConfigurator {
         val config = ComposerConfiguration.DefaultImpl(
                 apk!!, testApk!!,
                 shard, outputDirectory, instrumentationArguments, verboseOutput,
-                devices, devicePattern, keepOutput, apkInstallTimeout)
+                devices, devicePattern, keepOutput, apkInstallTimeout, remoteHostsFile)
         args = config.toCliArgs()
         main = MAIN_CLASS
         classpath = project.configurations.getByName(COMPOSER)
@@ -156,6 +159,10 @@ open class ComposerTask : JavaExec(), ComposerConfigurator {
         devicePattern = value
     }
 
+    override fun remoteHostsFile(value: String) {
+        remoteHostsFile = value
+    }
+
     override fun keepOutput(value: Boolean) {
         keepOutput = value
     }
@@ -163,4 +170,5 @@ open class ComposerTask : JavaExec(), ComposerConfigurator {
     override fun apkInstallTimeout(value: Int) {
         apkInstallTimeout = value
     }
+
 }

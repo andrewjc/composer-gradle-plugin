@@ -29,6 +29,7 @@ interface ComposerConfiguration {
     val devicePattern: String?
     val keepOutput: Boolean?
     val apkInstallTimeout: Int?
+    val remoteHostsFile: String?
 
     fun toCliArgs(): List<String> {
         return listOf(
@@ -47,7 +48,7 @@ interface ComposerConfiguration {
                 .let { params ->
                     instrumentationArguments.takeIf { it.isNotEmpty() }?.let {
                         params + arrayOf("--instrumentation-arguments",
-                                         *it.flatMap { listOf(it.first, it.second) }.toTypedArray())
+                                *it.flatMap { listOf(it.first, it.second) }.toTypedArray())
                     } ?: params
                 }
                 .let { params ->
@@ -75,6 +76,11 @@ interface ComposerConfiguration {
                         params + arrayOf("--install-timeout", "$it")
                     } ?: params
                 }
+                .let { params ->
+                    remoteHostsFile?.let {
+                        params + arrayOf("--remote-hosts-file", "$it")
+                    } ?: params
+                }
     }
 
     data class DefaultImpl(
@@ -87,7 +93,9 @@ interface ComposerConfiguration {
             override val devices: List<String>,
             override val devicePattern: String?,
             override val keepOutput: Boolean?,
-            override val apkInstallTimeout: Int?)
+            override val apkInstallTimeout: Int?,
+            override val remoteHostsFile: String?
+    )
         : ComposerConfiguration {
         init {
             if (devicePattern != null && devices.isNotEmpty())

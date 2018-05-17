@@ -35,6 +35,8 @@ open class ConfiguratorDomainObj(val name: String) : ComposerConfigurator {
         if (devices.isNotEmpty() && newValue != null)
             throw IllegalArgumentException("devices and devicePattern can not be used together. devices: [${devices.joinToString()}], devicePattern: $newValue")
     }
+    override var remoteHostsFile: String? = null
+
     override var keepOutput: Boolean? = null
 
     var configureTask: Action<ComposerTask>? = null
@@ -97,6 +99,10 @@ open class ConfiguratorDomainObj(val name: String) : ComposerConfigurator {
         devicePattern = value
     }
 
+    override fun remoteHostsFile(value: String) {
+        remoteHostsFile = value
+    }
+
     override fun keepOutput(value: Boolean) {
         keepOutput = value
     }
@@ -104,4 +110,5 @@ open class ConfiguratorDomainObj(val name: String) : ComposerConfigurator {
     override fun apkInstallTimeout(value: Int) {
         apkInstallTimeout = value
     }
+
 }
